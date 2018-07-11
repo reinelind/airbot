@@ -9,7 +9,7 @@ import info.mukel.telegrambot4s.api.declarative.{Commands, InlineQueries}
 
 abstract class AbstractBot (val token: String) extends TelegramBot
 
-class AviaBot (token : String)  extends AbstractBot(token) with Polling with Commands {
+class AviaBot (client : Client, token : String)  extends AbstractBot(token) with Polling with Commands {
   onCommand("/start") { implicit msg =>
     reply(
       """Greetings! This is a bot for searching available air tickets
@@ -28,7 +28,7 @@ class AviaBot (token : String)  extends AbstractBot(token) with Polling with Com
       reply(if (args.isEmpty || !(args.size == 2))
         "Enter two codes!"
       else  {
-        val client = new Client()
+
         val code =client.toIataCode(args.head, args.last)
         val tickets = client.Run(code._1, code._2)
         def ticketOutput(ticket: List[Data]): String = {
@@ -55,7 +55,7 @@ class AviaBot (token : String)  extends AbstractBot(token) with Polling with Com
     reply (if (args.isEmpty || !(args.size == 1))
       "Enter only one code"
     else  {
-      val client = new Client()
+
       val code =client.toIataCode("",args.head)
       val tickets = client.Run("", code._2)
       def ticketOutput (ticket : List[Data]) : String = {
@@ -76,7 +76,7 @@ class AviaBot (token : String)  extends AbstractBot(token) with Polling with Com
       reply (if (args.isEmpty || !(args.size == 1))
         "Enter only one code"
       else  {
-        val client = new Client()
+
         val code =client.toIataCode(args.head,"")
         val tickets = client.Run(code._1 , "")
         def ticketOutput (ticket : List[Data]) : String = {
@@ -109,7 +109,7 @@ class AviaBot (token : String)  extends AbstractBot(token) with Polling with Com
 }
 
 object AviaBot {
-  def apply (tok : String) = new AviaBot(tok).run()
+  def apply (client : Client ,tok : String) = new AviaBot(client, tok).run()
 }
 
 
