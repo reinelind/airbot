@@ -1,10 +1,13 @@
 package client
 
+import scala.util.Try._
 import info.mukel.telegrambot4s._
 import api._
 import common.Models._
 import info.mukel.telegrambot4s.api._
 import info.mukel.telegrambot4s.api.declarative.{Commands, InlineQueries}
+
+import scala.util.{Failure, Success}
 
 
 abstract class AbstractBot (val token: String) extends TelegramBot
@@ -22,76 +25,119 @@ class AviaBot (client : Client, token : String)  extends AbstractBot(token) with
     }
   }
 
-
   onCommand("/ticket") { implicit msg =>
     withArgs { args =>
-      reply(if (args.isEmpty || !(args.size == 2))
-        "Enter two codes!"
-      else  {
+      if (args.size != 2 || args.isEmpty)
+        reply("Enter two cities")
+      else {
+        val code = client.toIataCode
+          .onComplete {
+            case Success(iataResponse) => {
+              val departure = iataResponse.iataCityCode.filter(city => city
+                .name.toLowerCase == args.head.toLowerCase().replace(" ", ""))
+              val arrival = iataResponse.iataCityCode.filter(city => city
+                .name.toLowerCase == args.last.toLowerCase().replace(" ", ""))
 
-        val code =client.toIataCode(args.head, args.last)
-        val tickets = client.Run(code._1, code._2)
-        def ticketOutput(ticket: List[Data]): String = {
-          ticket match {
-            case x :: xs => ticketSimpleFormatOutput(x) ++ ticketOutput(xs)
-            case Nil => ""
+              val code = (if (departure.isEmpty) "" else departure.head.code,
+                if (arrival.isEmpty) "" else arrival.head.code)
+
+              val tickets = client.Run(code._1, code._2)
+                .onComplete {
+                  case Success(response) => reply {
+                    def ticketOutput(ticket: List[Data]): String = {
+                      ticket match {
+                        case x :: xs => ticketSimpleFormatOutput(x) ++ ticketOutput(xs)
+                        case Nil => ""
+                      }
+                    }
+
+                    ticketOutput(response.data)
+
+                  }
+                  case Failure(_) => reply("error")
+                }
+            }
+            case Failure(_) => reply("Error")
           }
-        }
-        ticketOutput(tickets.data)
-      })
-
+      }
     }
-
-    using(_.from) {
+      using(_.from) {
       user =>
         println(s"command /ticket called from user ${user.firstName} ${user.lastName.get}")
 
     }
   }
 
+    onCommand ("/allticketsto") { implicit msg =>
+      withArgs { args =>
+        if (args.size != 1 || args.isEmpty)
+          reply("Enter only one city!")
+        else {
+          val code = client.toIataCode
+            .onComplete {
+              case Success(iataResponse) => {
+                val departure = ""
+                val arrival = iataResponse.iataCityCode.filter(city => city
+                  .name.toLowerCase == args.last.toLowerCase().replace(" ", ""))
 
-  onCommand ("/allticketsto") {implicit msg =>
-    withArgs { args =>
-    reply (if (args.isEmpty || !(args.size == 1))
-      "Enter only one code"
-    else  {
+                val code = (departure,
+                  if (arrival.isEmpty) "" else arrival.head.code)
 
-      val code =client.toIataCode("",args.head)
-      val tickets = client.Run("", code._2)
-      def ticketOutput (ticket : List[Data]) : String = {
-        ticket match {
-          case x :: xs => ticketSimpleFormatOutput(x)  ++ ticketOutput(xs)
-          case Nil => ""
+                val tickets = client.Run(code._1, code._2)
+                  .onComplete {
+                    case Success(response) => reply {
+                      def ticketOutput(ticket: List[Data]): String = {
+                        ticket match {
+                          case x :: xs => ticketSimpleFormatOutput(x) ++ ticketOutput(xs)
+                          case Nil => ""
+                        }
+                      }
+
+                      ticketOutput(response.data)
+                    }
+                    case Failure(_) => reply("error")
+                  }
+              }
+              case Failure(_) => reply("Error")
+            }
         }
       }
+    }
 
-      ticketOutput(tickets.data)
-    })
-
-  }
-}
-
-  onCommand ("/allticketsfrom") {implicit msg =>
+  onCommand ("/allticketsfrom") { implicit msg =>
     withArgs { args =>
-      reply (if (args.isEmpty || !(args.size == 1))
-        "Enter only one code"
-      else  {
+      if (args.size != 1 || args.isEmpty)
+        reply("Enter only one city!")
+      else {
+        val code = client.toIataCode
+          .onComplete {
+            case Success(iataResponse) => {
+              val departure = iataResponse.iataCityCode.filter(city => city
+                .name.toLowerCase == args.head.toLowerCase().replace(" ", ""))
+              val arrival = ""
+              val code = (departure.head.code, arrival)
+              val tickets = client.Run(code._1, code._2)
+                .onComplete {
+                  case Success(response) => reply {
+                    def ticketOutput(ticket: List[Data]): String = {
+                      ticket match {
+                        case x :: xs => ticketSimpleFormatOutput(x) ++ ticketOutput(xs)
+                        case Nil => ""
+                      }
+                    }
 
-        val code =client.toIataCode(args.head,"")
-        val tickets = client.Run(code._1 , "")
-        def ticketOutput (ticket : List[Data]) : String = {
-          ticket match {
-            case x :: xs => ticketSimpleFormatOutput(x)  ++ ticketOutput(xs)
-            case Nil => ""
+                    ticketOutput(response.data)
+                  }
+                  case Failure(_) => reply("Response error")
+                }
+            }
+            case Failure(_) => reply("IataCode error")
           }
-        }
-      ticketOutput(tickets.data)
-      })
-
+      }
     }
   }
-
-
+  //
+  //
   def ticketSimpleFormatOutput (ticket : Data) : String = {
     s"""\n
        |Cost                      : ${ticket.value} UAH
@@ -108,6 +154,9 @@ class AviaBot (client : Client, token : String)  extends AbstractBot(token) with
   }
 }
 
+
+
+//
 object AviaBot {
   def apply (client : Client ,tok : String) = new AviaBot(client, tok).run()
 }

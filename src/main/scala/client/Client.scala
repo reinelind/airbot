@@ -23,27 +23,18 @@ import scala.concurrent.duration.Duration
 
 class Client (implicit actorSystem : ActorSystem, materializer : ActorMaterializer) extends JsonParser {
 
-  def toIataCode (from : String, to : String) : (String, String) ={
-
-
+  def toIataCode : Future [IataResponse] ={
 
     val URL = "http://iatacodes.org/api/v6/cities?api_key=40c3b809-3633-416e-a325-d7b030c7e9b8&city="
 
     val iataResponseFuture = Http().singleRequest(HttpRequest(uri = URL))
       .flatMap(response => Unmarshal(response).to[IataResponse])
 
-    val iataResponse = Await.result(iataResponseFuture, Duration.Inf )
+    iataResponseFuture
 
-    val departure = iataResponse.iataCityCode.filter(city => city
-      .name.toLowerCase == from.toLowerCase().replace(" ", ""))
-    val arrival = iataResponse.iataCityCode.filter(city => city
-        .name.toLowerCase == to.toLowerCase().replace(" ", ""))
-
-    (if (departure.isEmpty) "" else departure.head.code,
-      if (arrival.isEmpty) "" else arrival.head.code)
   }
 
-  def Run(from: String, to: String) : Response = {
+  def Run(from: String, to: String) : Future [Response] = {
 
     val origin = if (from.isEmpty)
       ""
@@ -69,13 +60,10 @@ class Client (implicit actorSystem : ActorSystem, materializer : ActorMaterializ
         .andThen{
           case Success (_) => println ("Request succeded")
           case Failure (_) => println ("Request failure")
-        }.andThen{
-      case _ => actorSystem.terminate()
-        println ("actorSystem terminated")
-    }
+        }
 
-    val result = Await.result(flowGet, Duration.Inf)
-    result
+
+      flowGet
     }
 
 

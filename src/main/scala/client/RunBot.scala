@@ -11,4 +11,5 @@ object RunBot extends App {
   val client = new Client
   val bot = AviaBot(client ,"528618622:AAERcLVWG5eA29h1WEwR-Fr4I1bGHHrwESA")
   StdIn.readLine()
+  system.terminate()
 }
