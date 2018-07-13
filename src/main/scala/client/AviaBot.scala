@@ -1,8 +1,6 @@
 package client
 
-import scala.util.Try._
 import info.mukel.telegrambot4s._
-import api._
 import common.Models._
 import info.mukel.telegrambot4s.api._
 import info.mukel.telegrambot4s.api.declarative.{Commands, InlineQueries}
@@ -140,18 +138,23 @@ class AviaBot (client : Client, token : String)  extends AbstractBot(token) with
   //
   def ticketSimpleFormatOutput (ticket : Data) : String = {
     s"""\n
-       |Cost                      : ${ticket.value} UAH
-       |Departure           : ${ticket.origin}
+       |Cost"                   : ${ticket.value} UAH
+       |Departure          : ${ticket.origin}
        |Destination        : ${ticket.destination}
        |Departure date : ${ticket.depart_date} UTC
-       |Arrival date         : ${ticket.return_date} UTC
-       |Trip class              : ${ticket.trip_class match {
+       |Arrival date        : ${ticket.return_date} UTC
+       |Trip class            : ${ticket.trip_class match {
       case 0 => "Economy class"
       case 1 => "Business class"
       case 2 => "First class"
     }}
-       |Available:             : ${if (ticket.actual) "Actual" else "Not actual"}""".stripMargin
+       |Available:           : ${if (ticket.actual) "Actual" else "Not actual"}
+       |Gate                    : ${ticket.gate}""".stripMargin
+
+
+
   }
+
 }
 
 

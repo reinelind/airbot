@@ -2,7 +2,6 @@ package client
 
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.unmarshalling.Unmarshal
 import akka.stream.ActorMaterializer
@@ -13,12 +12,7 @@ import concurrent.ExecutionContext.Implicits.global
 import common._
 import common.Models._
 
-
 import scala.util.{Failure, Success}
-import info.mukel.telegrambot4s.api._
-import info.mukel.telegrambot4s.api.declarative.Commands
-
-import scala.concurrent.duration.Duration
 
 
 class Client (implicit actorSystem : ActorSystem, materializer : ActorMaterializer) extends JsonParser {
